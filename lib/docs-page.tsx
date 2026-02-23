@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+declare const SwaggerUIBundle: any;
 
 declare global {
   interface Window {
