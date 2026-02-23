@@ -13,6 +13,7 @@
   },
   "files": ["bin", "scripts", "README.md", "LICENSE"],
   "scripts": {
+    "test": "echo \"No tests yet\"",
     "dev": "concurrently -k \"npm run dev:docs\" \"next dev\"",
     "build": "next build",
     "start": "next start",
