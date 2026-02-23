@@ -18,6 +18,16 @@ To scaffold docs routes and scripts in any Next.js project:
 
 The OpenAPI spec is generated at `openapi-spec.ts` via `npm run generate:openapi`. During `npm run dev`, a watcher keeps it up to date when you edit `app/api/**/route.*` or `openapi.config.*`. The docs UI reads the spec from `/api/openapi` and loads Swagger UI assets from `/swagger-ui/`.
 
+## Auto Docs From Existing Routes
+
+By default, the generator includes any API route it can detect. For App Router, it reads exported handlers like `GET`, `POST`, etc. For Pages Router, it tries to infer methods by scanning `req.method` checks. If it cannot infer, it falls back to `defaultMethods` in `openapi.config.ts`.
+
+If you want full request/response schemas without wrapping, export Zod schemas with one of these names:
+
+`RequestSchema`, `requestSchema`, `BodySchema`, `bodySchema`
+
+`ResponseSchema`, `responseSchema`, `OutputSchema`, `outputSchema`
+
 ## Example route
 
 `app/api/chat/route.ts` exports a `docs` object using `defineRoute`, plus a sample `POST /api/chat` handler.

@@ -149,7 +149,7 @@ function init() {
 
   writeFileIfMissing(
     path.join(cwd, "openapi.config.ts"),
-    `export const openapiConfig = {\n  info: {\n    title: \"Next Swagger Auto\",\n    version: \"0.1.0\",\n    description: \"FastAPI-style docs for Next.js\"\n  },\n  servers: []\n};\n`
+    `export const openapiConfig = {\n  info: {\n    title: \"Next Swagger Auto\",\n    version: \"0.1.0\",\n    description: \"FastAPI-style docs for Next.js\"\n  },\n  servers: [],\n  includeUndocumented: true,\n  defaultMethods: [\"get\"]\n};\n`
   );
 
   writeFileIfMissing(

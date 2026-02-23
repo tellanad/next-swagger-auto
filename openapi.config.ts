@@ -8,5 +8,7 @@ export const openapiConfig = {
     {
       url: "http://localhost:3000"
     }
-  ]
+  ],
+  includeUndocumented: true,
+  defaultMethods: ["get"]
 };

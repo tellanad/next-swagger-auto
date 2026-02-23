@@ -6,7 +6,7 @@ import fg from "fast-glob";
 import jiti from "jiti";
 import ts from "typescript";
 import { zodToJsonSchema } from "zod-to-json-schema";
-import type { RouteDoc } from "../lib/next-swagger-auto";
+import type { RouteDoc, HttpMethod } from "../lib/next-swagger-auto";
 
 const projectRoot = process.cwd();
 const defaultConfig = {
@@ -15,10 +15,15 @@ const defaultConfig = {
     version: "0.1.0",
     description: "FastAPI-style docs for a Next.js app"
   },
-  servers: [] as { url: string }[]
+  servers: [] as { url: string }[],
+  includeUndocumented: true,
+  defaultMethods: ["get"] as HttpMethod[]
 };
 
-type OpenApiConfig = typeof defaultConfig;
+type OpenApiConfig = typeof defaultConfig & {
+  includeUndocumented?: boolean;
+  defaultMethods?: HttpMethod[];
+};
 
 function normalizePath(filePath: string, baseDir: string, isAppRouter: boolean) {
   const relative = path.relative(baseDir, filePath);
@@ -166,6 +171,69 @@ function toSchema(
   return normalizedSchema;
 }
 
+function isZodSchema(value: unknown): value is RouteDoc["request"] {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    "safeParse" in value &&
+    typeof (value as { safeParse?: unknown }).safeParse === "function"
+  );
+}
+
+function normalizeMethods(methods: string[]) {
+  const allowed: HttpMethod[] = [
+    "get",
+    "post",
+    "put",
+    "patch",
+    "delete",
+    "head",
+    "options"
+  ];
+
+  const normalized = methods
+    .map((method) => method.toLowerCase())
+    .filter((method) => allowed.includes(method as HttpMethod));
+
+  return Array.from(new Set(normalized)) as HttpMethod[];
+}
+
+function getTagFromPath(routePath: string) {
+  const parts = routePath.split("/").filter(Boolean);
+  if (parts[0] === "api" && parts[1]) return parts[1];
+  return parts[0];
+}
+
+async function inferMethodsFromFile(
+  filePath: string,
+  fallback: HttpMethod[]
+): Promise<HttpMethod[]> {
+  try {
+    const content = await fs.readFile(filePath, "utf8");
+    const matches = new Set<string>();
+    const regexes = [
+      /req\.method\s*===\s*["'`](GET|POST|PUT|PATCH|DELETE|HEAD|OPTIONS)["'`]/g,
+      /req\.method\s*!==\s*["'`](GET|POST|PUT|PATCH|DELETE|HEAD|OPTIONS)["'`]/g,
+      /case\s+["'`](GET|POST|PUT|PATCH|DELETE|HEAD|OPTIONS)["'`]/g
+    ];
+
+    for (const regex of regexes) {
+      let match: RegExpExecArray | null;
+      while ((match = regex.exec(content)) !== null) {
+        matches.add(match[1]);
+      }
+    }
+
+    if (matches.size > 0) {
+      return normalizeMethods(Array.from(matches));
+    }
+  } catch {
+    // ignore
+  }
+
+  return fallback;
+}
+
 async function loadConfig(): Promise<OpenApiConfig> {
   const tsConfigPath = path.join(projectRoot, "openapi.config.ts");
   const jsConfigPath = path.join(projectRoot, "openapi.config.js");
@@ -292,34 +360,101 @@ export async function generateOpenApi() {
       console.warn(`[next-swagger-auto] Skipping ${file}: ${message}`);
       continue;
     }
+
     const docsExport = mod.docs as RouteDoc | RouteDoc[] | undefined;
+    const docsList = docsExport
+      ? Array.isArray(docsExport)
+        ? docsExport
+        : [docsExport]
+      : [];
 
-    if (!docsExport) continue;
-
-    const docsList = Array.isArray(docsExport) ? docsExport : [docsExport];
-
+    const docsByMethod = new Map<string, RouteDoc>();
     for (const doc of docsList) {
-      const method = doc.method?.toLowerCase();
-      if (!method) continue;
+      if (doc?.method) {
+        docsByMethod.set(doc.method.toLowerCase(), doc);
+      }
+    }
 
+    let inferredMethods: HttpMethod[] = [];
+
+    if (docsByMethod.size === 0 && config.includeUndocumented) {
+      if (isAppRoute) {
+        const exportedMethods = Object.keys(mod).filter((key) =>
+          [
+            "GET",
+            "POST",
+            "PUT",
+            "PATCH",
+            "DELETE",
+            "HEAD",
+            "OPTIONS"
+          ].includes(key)
+        );
+        inferredMethods = normalizeMethods(exportedMethods);
+      } else {
+        inferredMethods = await inferMethodsFromFile(
+          file,
+          config.defaultMethods ?? defaultConfig.defaultMethods
+        );
+      }
+    }
+
+    const methodsToProcess = new Set<string>([
+      ...Array.from(docsByMethod.keys()),
+      ...inferredMethods
+    ]);
+
+    if (methodsToProcess.size === 0) continue;
+
+    const requestSchema =
+      isZodSchema((mod as { RequestSchema?: unknown }).RequestSchema)
+        ? (mod as { RequestSchema: RouteDoc["request"] }).RequestSchema
+        : isZodSchema((mod as { requestSchema?: unknown }).requestSchema)
+        ? (mod as { requestSchema: RouteDoc["request"] }).requestSchema
+        : isZodSchema((mod as { BodySchema?: unknown }).BodySchema)
+        ? (mod as { BodySchema: RouteDoc["request"] }).BodySchema
+        : isZodSchema((mod as { bodySchema?: unknown }).bodySchema)
+        ? (mod as { bodySchema: RouteDoc["request"] }).bodySchema
+        : undefined;
+
+    const responseSchema =
+      isZodSchema((mod as { ResponseSchema?: unknown }).ResponseSchema)
+        ? (mod as { ResponseSchema: RouteDoc["request"] }).ResponseSchema
+        : isZodSchema((mod as { responseSchema?: unknown }).responseSchema)
+        ? (mod as { responseSchema: RouteDoc["request"] }).responseSchema
+        : isZodSchema((mod as { OutputSchema?: unknown }).OutputSchema)
+        ? (mod as { OutputSchema: RouteDoc["request"] }).OutputSchema
+        : isZodSchema((mod as { outputSchema?: unknown }).outputSchema)
+        ? (mod as { outputSchema: RouteDoc["request"] }).outputSchema
+        : undefined;
+
+    for (const method of methodsToProcess) {
       if (!paths[routePath]) {
         paths[routePath] = {};
       }
 
+      const doc = docsByMethod.get(method);
+      const summary =
+        doc?.summary ?? `${method.toUpperCase()} ${routePath}`;
+      const tag = getTagFromPath(routePath);
+      const tags = doc?.tags ?? (tag ? [tag] : undefined);
+
       const operation: Record<string, unknown> = {
-        summary: doc.summary,
-        description: doc.description,
-        tags: doc.tags,
+        summary,
+        description: doc?.description,
+        tags,
         responses: {}
       };
 
-      if (doc.request) {
+      const request = doc?.request ?? requestSchema;
+
+      if (request) {
         operation.requestBody = {
           required: true,
           content: {
             "application/json": {
               schema: toSchema(
-                doc.request,
+                request,
                 `${routePath}_${method}_request`,
                 componentsSchemas
               )
@@ -330,13 +465,15 @@ export async function generateOpenApi() {
 
       const responses: Record<string, unknown> = {};
 
-      if (doc.response) {
+      const response = doc?.response ?? responseSchema;
+
+      if (response) {
         responses["200"] = {
           description: "OK",
           content: {
             "application/json": {
               schema: toSchema(
-                doc.response,
+                response,
                 `${routePath}_${method}_response`,
                 componentsSchemas
               )
@@ -345,7 +482,7 @@ export async function generateOpenApi() {
         };
       }
 
-      if (doc.responses) {
+      if (doc?.responses) {
         for (const [status, responseDoc] of Object.entries(doc.responses)) {
           if (!responseDoc.schema) {
             responses[status] = {
