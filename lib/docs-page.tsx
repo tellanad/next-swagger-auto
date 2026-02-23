@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-declare const SwaggerUIBundle: any;
 
 declare global {
   interface Window {
@@ -52,8 +51,9 @@ export function DocsPage() {
         docExpansion: "none",
         persistAuthorization: true,
         presets: [
+          // @ts-ignore
           SwaggerUIBundle.presets?.apis,
-          window.SwaggerUIStandalonePreset
+          (window as any).SwaggerUIStandalonePreset
         ].filter(Boolean)
       });
     };
