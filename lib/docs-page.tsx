@@ -49,15 +49,14 @@ export function DocsPage() {
         return;
       }
 
+      const apisPreset = (SwaggerUIBundle as any)["presets"]?.apis;
+
       ui = SwaggerUIBundle({
         domNode: containerRef.current,
         url: "/api/openapi",
         docExpansion: "none",
         persistAuthorization: true,
-        presets: [
-          (SwaggerUIBundle as any)["presets"]?.apis,
-          (window as any).SwaggerUIStandalonePreset
-        ].filter(Boolean)
+        presets: [apisPreset, (window as any).SwaggerUIStandalonePreset].filter(Boolean)
       });
     };
 
