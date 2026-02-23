@@ -4,7 +4,9 @@ import { useEffect, useRef } from "react";
 
 declare global {
   interface Window {
-    SwaggerUIBundle?: (options: Record<string, unknown>) => { destroy?: () => void };
+    SwaggerUIBundle?: ((options: Record<string, unknown>) => { destroy?: () => void }) & {
+      presets?: { apis?: unknown };
+    };
     SwaggerUIStandalonePreset?: unknown;
   }
 }
@@ -38,7 +40,9 @@ export function DocsPage() {
 
       if (!active || !containerRef.current) return;
 
-      const SwaggerUIBundle = window.SwaggerUIBundle;
+      const SwaggerUIBundle = window.SwaggerUIBundle as
+        | (typeof window.SwaggerUIBundle & { presets?: { apis?: unknown } })
+        | undefined;
 
       if (typeof SwaggerUIBundle !== "function") {
         console.error("Swagger UI bundle not available on window.");
