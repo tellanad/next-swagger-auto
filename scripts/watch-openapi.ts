@@ -2,14 +2,14 @@ import chokidar from "chokidar";
 import { generateOpenApi } from "./generate-openapi";
 
 const watchPaths = [
-  "app/api/**/route.ts",
-  "app/api/**/route.tsx",
-  "app/api/**/route.js",
-  "app/api/**/route.jsx",
-  "src/app/api/**/route.ts",
-  "src/app/api/**/route.tsx",
-  "src/app/api/**/route.js",
-  "src/app/api/**/route.jsx",
+  "app/**/route.ts",
+  "app/**/route.tsx",
+  "app/**/route.js",
+  "app/**/route.jsx",
+  "src/app/**/route.ts",
+  "src/app/**/route.tsx",
+  "src/app/**/route.js",
+  "src/app/**/route.jsx",
   "pages/api/**/*.ts",
   "pages/api/**/*.tsx",
   "pages/api/**/*.js",

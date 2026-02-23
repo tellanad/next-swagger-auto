@@ -300,10 +300,10 @@ export async function generateOpenApi() {
   );
 
   const appPatterns = appRoots.flatMap((root) => [
-    `${root}/api/**/route.ts`,
-    `${root}/api/**/route.tsx`,
-    `${root}/api/**/route.js`,
-    `${root}/api/**/route.jsx`
+    `${root}/**/route.ts`,
+    `${root}/**/route.tsx`,
+    `${root}/**/route.js`,
+    `${root}/**/route.jsx`
   ]);
 
   const pagePatterns = pageRoots.flatMap((root) => [
@@ -317,8 +317,7 @@ export async function generateOpenApi() {
     cwd: projectRoot,
     absolute: true,
     ignore: [
-      "app/api/openapi/route.*",
-      "src/app/api/openapi/route.*",
+      "**/api/openapi/route.*",
       "pages/api/openapi.*",
       "src/pages/api/openapi.*"
     ]

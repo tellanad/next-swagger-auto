@@ -20,7 +20,7 @@ The OpenAPI spec is generated at `openapi-spec.ts` via `npm run generate:openapi
 
 ## Auto Docs From Existing Routes
 
-By default, the generator includes any API route it can detect. For App Router, it reads exported handlers like `GET`, `POST`, etc. For Pages Router, it tries to infer methods by scanning `req.method` checks. If it cannot infer, it falls back to `defaultMethods` in `openapi.config.ts`.
+By default, the generator includes any **route handler** it can detect. For App Router, it scans all `app/**/route.*` files and reads exported handlers like `GET`, `POST`, etc. For Pages Router, it scans `pages/api/**` and tries to infer methods by scanning `req.method` checks. If it cannot infer, it falls back to `defaultMethods` in `openapi.config.ts`.
 
 If you want full request/response schemas without wrapping, export Zod schemas with one of these names:
 
