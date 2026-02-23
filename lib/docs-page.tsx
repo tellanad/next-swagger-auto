@@ -51,7 +51,7 @@ export function DocsPage() {
         docExpansion: "none",
         persistAuthorization: true,
         presets: [
-          // @ts-ignore
+          // @ts-ignore - SwaggerUIBundle types are often mismatched in dist
           SwaggerUIBundle.presets?.apis,
           (window as any).SwaggerUIStandalonePreset
         ].filter(Boolean)
