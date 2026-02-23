@@ -1,0 +1,38 @@
+{
+  "name": "next-swagger-auto",
+  "private": true,
+  "version": "0.1.0",
+  "license": "MIT",
+  "type": "module",
+  "bin": {
+    "next-swagger-auto": "bin/next-swagger-auto.cjs"
+  },
+  "scripts": {
+    "dev": "concurrently -k \"npm run dev:docs\" \"next dev\"",
+    "build": "next build",
+    "start": "next start",
+    "generate:openapi": "tsx scripts/generate-openapi.ts",
+    "dev:docs": "tsx scripts/watch-openapi.ts",
+    "prepare:swagger-ui": "tsx scripts/copy-swagger-ui.ts",
+    "predev": "npm run prepare:swagger-ui && npm run generate:openapi",
+    "prebuild": "npm run prepare:swagger-ui && npm run generate:openapi"
+  },
+  "dependencies": {
+    "next": "^16.1.6",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "swagger-ui": "^5.18.3",
+    "zod": "^3.23.0",
+    "zod-to-json-schema": "^3.23.0"
+  },
+  "devDependencies": {
+    "@types/node": "25.3.0",
+    "@types/react": "19.2.14",
+    "chokidar": "^3.6.0",
+    "concurrently": "^8.2.2",
+    "fast-glob": "^3.3.2",
+    "jiti": "^1.21.0",
+    "tsx": "^4.7.0",
+    "typescript": "^5.3.3"
+  }
+}
